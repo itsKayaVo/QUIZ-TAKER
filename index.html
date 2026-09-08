@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Star Studios - Assessment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; max-width: 960px; margin: 20px auto; padding: 0 16px 60px; color: #171717; line-height: 1.45; }
+  h1 { font-size: 20px; margin-bottom: 2px; }
+  h2 { font-size: 16px; margin-top: 26px; }
+  .sub { color: #666; font-size: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 3px; }
+  input[type=text], input[type=file], textarea, select {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 6px 8px;
+    border: 1px solid #999; border-radius: 3px; background: #fff;
+  }
+  textarea { resize: vertical; }
+  button { font-family: inherit; font-size: 13px; padding: 7px 13px; border: 1px solid #333; background: #eee; border-radius: 3px; cursor: pointer; margin: 4px 4px 4px 0; }
+  button:hover { background: #ddd; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.primary { background: #2a5; border-color: #1d3; color: #fff; }
+  button.primary:hover { background: #294; }
+  button.danger { background: #fff0f0; border-color: #c33; color: #a22; }
+  button.small { padding: 3px 8px; font-size: 12px; }
+  .card { border: 1px solid #ccc; border-radius: 4px; padding: 14px 16px; margin: 10px 0; background: #fafafa; }
+  .banner { background: #eef6ff; border: 1px solid #9cf; padding: 10px 12px; border-radius: 4px; font-size: 13px; margin: 10px 0; }
+  .banner.warn { background: #fff6e8; border-color: #e0b060; }
+  .muted { color: #777; font-size: 12px; }
+  .hidden { display: none !important; }
+  .layout { display: flex; gap: 20px; }
+  .sidebar { width: 180px; flex-shrink: 0; }
+  .qnav { list-style: none; padding: 0; margin: 0; }
+  .qnav li { padding: 6px 8px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 4px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between; }
+  .qnav li:hover { background: #eee; }
+  .qnav li.current { border-color: #2a5; font-weight: 700; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #ccc; }
+  .dot.answered { background: #2a5; }
+  .main { flex: 1; min-width: 0; }
+  .scenario { background: #fff; border-left: 3px solid #999; padding: 8px 12px; margin: 8px 0; font-size: 13px; white-space: pre-wrap; }
+  .toast { position: fixed; bottom: 16px; right: 16px; background: #222; color: #fff; padding: 8px 14px; border-radius: 4px; font-size: 12px; opacity: 0.92; z-index: 50; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid #999; }
+  .badge.normal { border-color: #2a5; color: #196; }
+  .badge.review { border-color: #e0a020; color: #a76; }
+  .badge.flag { border-color: #c33; color: #a22; background: #fff0f0; }
+  .pastebox { background: #fff8f0; border: 1px dashed #e0a020; padding: 6px 8px; font-size: 12px; margin-top: 4px; border-radius: 3px; }
+  .answerbox { min-height: 100px; border: 1px solid #999; border-radius: 3px; padding: 8px; background: #fff; font-size: 14px; white-space: pre-wrap; }
+  .answerbox:focus { outline: 2px solid #9cf; outline-offset: 1px; }
+  .answerbox.is-empty:before { content: attr(data-placeholder); color: #999; }
+  .pasted-text { background: #fff2b8; border-bottom: 1px dashed #c99a1f; }
+  .emdash-flag { background: #ffd6d6; border-bottom: 1px solid #c33; }
+  .legend { font-size: 11px; color: #888; margin-top: 4px; }
+  a.link { color: #248; cursor: pointer; text-decoration: underline; font-size: 13px; }
+  footer { margin-top: 40px; color: #999; font-size: 12px; }
+  .progressbar { position: sticky; top: 0; background: #fff; padding: 6px 0; border-bottom: 1px solid #ddd; z-index: 5; font-size: 12px; color: #555; }
+</style>
+</head>
+<body>
+
+<h1>Star Studios - Director Assessment</h1>
+<p class="sub" id="topSub">Import your assessment file to begin.</p>
+
+<!-- import screen -->
+<div id="screen-import">
+  <div class="card">
+    <label>Import assessment file (.json, given to you by Star Studios)</label>
+    <input type="file" id="bundleFile" accept="application/json">
+    <div class="muted" style="margin-top:6px;">Or paste the file contents below.</div>
+    <textarea id="bundlePaste" rows="3" placeholder="Paste bundle JSON here instead of uploading a file"></textarea>
+    <button class="primary" onclick="loadBundleFromPaste()" style="margin-top:8px;">Load pasted JSON</button>
+  </div>
+  <p><a class="link" onclick="showReviewer()">Reviewing submissions instead? Open the Reviewer Dashboard</a></p>
+</div>
+
+<!-- login screen -->
+<div id="screen-login" class="hidden">
+  <div class="card">
+    <h2 id="loginQuizTitle" style="margin-top:0;"></h2>
+    <p id="loginQuizDesc" class="muted"></p>
+    <label>Your name</label>
+    <select id="loginName"></select>
+    <label>Access code</label>
+    <input type="text" id="loginCode" placeholder="6-character code you were given">
+    <button class="primary" id="loginBtn" onclick="attemptLogin()" style="margin-top:10px;">Continue</button>
+    <p id="loginError" style="color:#c33; font-size:13px;"></p>
+  </div>
+</div>
+
+<!-- integrity notice screen -->
+<div id="screen-integrity" class="hidden">
+  <div class="card">
+    <div class="banner" id="integrityText"></div>
+    <p class="muted">This app will also try to enter fullscreen mode when you start, and will record if you leave fullscreen or switch tabs during the assessment. None of this is hidden, you're seeing this notice because it's exactly what happens.</p>
+    <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
+      <input type="checkbox" id="ackCheck" style="width:auto;"> I understand and agree to begin.
+    </label>
+    <div id="resumeBox"></div>
+    <button class="primary" onclick="startAssessment()">Begin assessment</button>
+  </div>
+</div>
+
+<!-- assessment screen -->
+<div id="screen-assessment" class="hidden">
+  <div class="progressbar" id="progressBar"></div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="muted" style="margin-bottom:6px;">Questions</div>
+      <ul class="qnav" id="qNavList"></ul>
+      <button onclick="goReview()" style="width:100%;">Review and submit</button>
+    </div>
+    <div class="main">
+      <div id="fsWarning"></div>
+      <div class="card" id="questionCard"></div>
+      <div>
+        <button onclick="navQuestion(-1)">Previous</button>
+        <button onclick="navQuestion(1)">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- pre-submit review screen -->
+<div id="screen-finalreview" class="hidden">
+  <div class="card">
+    <h2 style="margin-top:0;">Review before you submit</h2>
+    <div id="finalReviewList"></div>
+    <button class="primary" onclick="confirmSubmit()">Submit final answers</button>
+    <button onclick="backToAssessment()">Back to assessment</button>
+  </div>
+</div>
+
+<!-- done screen -->
+<div id="screen-done" class="hidden">
+  <div class="card">
+    <h2 style="margin-top:0;">Submitted</h2>
+    <p>Thanks, your responses have been recorded and a copy has downloaded to your device. If you were asked to send it in yourself, please send that file to Star Studios.</p>
+    <div id="doneSummary"></div>
+  </div>
+</div>
+
+<!-- reviewer dashboard -->
+<div id="screen-reviewer" class="hidden">
+  <div class="card">
+    <h2 style="margin-top:0;">Reviewer Dashboard</h2>
+    <p class="muted">Import one or more submission files. Nothing here is transmitted anywhere, this only reads files you choose.</p>
+    <label>Import submission file(s)</label>
+    <input type="file" id="submissionFiles" accept="application/json" multiple>
+    <button onclick="loadLocalSubmissions()">Also load submissions saved earlier in this browser</button>
+  </div>
+  <div id="reviewerTableWrap"></div>
+  <div id="reviewerDetail"></div>
+  <p><a class="link" onclick="showImport()">Back</a></p>
+</div>
+
+<footer>Star Studios internal tooling. Timing and interaction analysis are heuristic signals, not proof of anything, use judgment.</footer>
+
+<script>
+// what we're holding onto for the current session
+var bundle = null;          // the imported assignment bundle
+var assignment = null;      // this director's decrypted question set
+var order = [];              // question ids in display order
+var qState = {};             // per-question tracking
+var currentIdx = 0;
+var attemptKey = null;
+var startedAt = null;
+var tabSwitchCount = 0;
+var fullscreenExitCount = 0;
+var navigationLog = [];
+var timerHandle = null;
+var lastResumeAt = null;
+
+function uid(p){ return p + '_' + Math.random().toString(36).slice(2, 9); }
+function esc(s){ return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function fmtMs(ms){
+  var s = Math.round(ms / 1000);
+  var m = Math.floor(s / 60);
+  var r = s % 60;
+  return m > 0 ? (m + 'm ' + r + 's') : (r + 's');
+}
+function downloadJSON(obj, filename){
+  var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+}
+function toast(msg){
+  var t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2800);
+}
+function showOnly(id){
+  ['screen-import', 'screen-login', 'screen-integrity', 'screen-assessment', 'screen-finalreview', 'screen-done', 'screen-reviewer']
+    .forEach(function(s){ document.getElementById(s).classList.toggle('hidden', s !== id); });
+}
+
+/* matching decrypt side for the encryption the builder does. each director's questions
+   are locked with a key derived from their own access code, so the bundle file alone
+   doesn't show anyone's questions or codes. */
+function base64ToBuf(b64){
+  var bin = atob(b64);
+  var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+async function deriveKey(password, saltBytes){
+  var enc = new TextEncoder();
+  var baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBytes, iterations: 150000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+async function decryptWithCode(encObj, code){
+  var salt = new Uint8Array(base64ToBuf(encObj.salt));
+  var iv = new Uint8Array(base64ToBuf(encObj.iv));
+  var key = await deriveKey(code, salt);
+  var cipherBuf = base64ToBuf(encObj.data);
+  var plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, cipherBuf);
+  return JSON.parse(new TextDecoder().decode(plainBuf));
+}
+
+/* import bundle */
+document.getElementById('bundleFile').addEventListener('change', function(e){
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt){ tryLoadBundle(evt.target.result); };
+  reader.readAsText(file);
+});
+function loadBundleFromPaste(){
+  var txt = document.getElementById('bundlePaste').value.trim();
+  if (!txt) { alert('Paste the JSON first.'); return; }
+  tryLoadBundle(txt);
+}
+function tryLoadBundle(text){
+  try {
+    var data = JSON.parse(text);
+    if (!Array.isArray(data.assignments)) throw new Error('bad format');
+    bundle = data;
+    document.getElementById('loginQuizTitle').textContent = bundle.quizTitle || 'Assessment';
+    document.getElementById('loginQuizDesc').textContent = bundle.description || '';
+    var sel = document.getElementById('loginName');
+    sel.innerHTML = '<option value="">Select your name...</option>' +
+      bundle.assignments.map(function(a){ return '<option value="' + esc(a.directorName) + '">' + esc(a.directorName) + '</option>'; }).join('');
+    document.getElementById('loginError').textContent = '';
+    showOnly('screen-login');
+  } catch (err) {
+    alert('That file does not look like a valid assessment bundle.');
+  }
+}
+
+async function attemptLogin(){
+  var name = document.getElementById('loginName').value;
+  var code = document.getElementById('loginCode').value.trim();
+  var err = document.getElementById('loginError');
+  if (!name) { err.textContent = 'Select your name.'; return; }
+  if (!code) { err.textContent = 'Enter your access code.'; return; }
+  var found = bundle.assignments.find(function(x){ return x.directorName === name; });
+  if (!found) { err.textContent = 'No assignment found for that name.'; return; }
+
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Checking...';
+  try {
+    var decrypted = await decryptWithCode(found.encrypted, code.toUpperCase());
+    btn.disabled = false; btn.textContent = 'Continue';
+    err.textContent = '';
+    assignment = { directorName: found.directorName, accessCode: code.toUpperCase(), questions: decrypted };
+    order = assignment.questions.map(function(q){ return q.id; });
+    attemptKey = 'ss_attempt_' + assignment.directorName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '_' + assignment.accessCode;
+    document.getElementById('integrityText').textContent = bundle.integrityNotice ||
+      'Assessment Integrity Notice: This assessment records completion time, question timing, and certain interaction events such as copy/paste activity. These records are used only to verify that responses represent your own work.';
+
+    var existing = localStorage.getItem(attemptKey);
+    var resumeBox = document.getElementById('resumeBox');
+    if (existing) {
+      resumeBox.innerHTML = '<div class="banner warn">An in-progress attempt was found on this device. <button class="small" onclick="resumeAttempt()">Resume it</button> <button class="small" onclick="discardAttempt()">Start over instead</button></div>';
+    } else {
+      resumeBox.innerHTML = '';
+    }
+    showOnly('screen-integrity');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Continue';
+    err.textContent = 'That access code is not correct for the selected name.';
+  }
+}
+
+function discardAttempt(){
+  localStorage.removeItem(attemptKey);
+  document.getElementById('resumeBox').innerHTML = '';
+}
+
+/* starting and resuming */
+function initFreshState(){
+  qState = {};
+  order.forEach(function(id){
+    qState[id] = { firstViewedAt: null, totalMs: 0, edits: 0, answer: '', answerHtml: '', pasteEvents: [], copyEvents: [], visits: 0 };
+  });
+  startedAt = new Date().toISOString();
+  tabSwitchCount = 0;
+  fullscreenExitCount = 0;
+  navigationLog = [];
+  currentIdx = 0;
+}
+
+function resumeAttempt(){
+  try {
+    var saved = JSON.parse(localStorage.getItem(attemptKey));
+    qState = saved.qState; startedAt = saved.startedAt;
+    tabSwitchCount = saved.tabSwitchCount || 0;
+    fullscreenExitCount = saved.fullscreenExitCount || 0;
+    navigationLog = saved.navigationLog || [];
+    currentIdx = saved.currentIdx || 0;
+  } catch (e) { initFreshState(); }
+  document.getElementById('ackCheck').checked = true;
+  startAssessment(true);
+}
+
+function startAssessment(isResume){
+  if (!isResume) {
+    if (!document.getElementById('ackCheck').checked) { alert('Please check the acknowledgment box first.'); return; }
+    initFreshState();
+  }
+  showOnly('screen-assessment');
+  requestFullscreenSafe();
+  attachGlobalTrackers();
+  renderQuestion();
+  timerHandle = setInterval(tick, 1000);
+  autosave();
+}
+
+function requestFullscreenSafe(){
+  try {
+    var el = document.documentElement;
+    var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) req.call(el).catch(function(){
+      document.getElementById('fsWarning').innerHTML = '<div class="banner warn">Fullscreen was blocked by your browser, continuing without it.</div>';
+    });
+  } catch (e) {}
+}
+
+var trackersAttached = false;
+function attachGlobalTrackers(){
+  if (trackersAttached) return;
+  trackersAttached = true;
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { tabSwitchCount++; pauseTimer(); } else { resumeTimer(); }
+  });
+  document.addEventListener('fullscreenchange', function(){
+    if (!document.fullscreenElement && !document.getElementById('screen-assessment').classList.contains('hidden')) {
+      fullscreenExitCount++;
+      document.getElementById('fsWarning').innerHTML = '<div class="banner warn">You exited fullscreen, this has been noted. <button class="small" onclick="requestFullscreenSafe()">Re-enter fullscreen</button></div>';
+    }
+  });
+}
+
+function pauseTimer(){
+  if (lastResumeAt) {
+    var id = order[currentIdx];
+    qState[id].totalMs += Date.now() - lastResumeAt;
+    lastResumeAt = null;
+  }
+}
+function resumeTimer(){
+  if (!document.hidden) lastResumeAt = Date.now();
+}
+function tick(){
+  autosave();
+  renderProgressBar();
+}
+
+/* looking at what got pasted in and guessing where it came from. this is a best-effort
+   heuristic based on clipboard formatting metadata, it cannot reliably name the exact
+   source app, especially for plain-text sources like an AI chat window. */
+function analyzePaste(html, text, scenario){
+  var result = { sourceGuess: 'Unknown, plain text', confidence: 'low', matchesScenario: false };
+  if (scenario && scenario.trim().length > 10) {
+    var norm = function(s){ return s.replace(/\s+/g, ' ').trim().toLowerCase(); };
+    if (norm(text).indexOf(norm(scenario).slice(0, Math.min(40, scenario.length))) !== -1) {
+      result.matchesScenario = true;
+      result.sourceGuess = "Matches this question's own scenario text";
+      result.confidence = 'high';
+      return result;
+    }
+  }
+  if (html) {
+    if (/docs-internal-guid-/i.test(html)) { result.sourceGuess = 'Google Docs'; result.confidence = 'high'; }
+    else if (/urn:schemas-microsoft-com:office:excel/i.test(html)) { result.sourceGuess = 'Microsoft Excel'; result.confidence = 'high'; }
+    else if (/urn:schemas-microsoft-com:office:word|mso-/i.test(html)) { result.sourceGuess = 'Microsoft Word'; result.confidence = 'high'; }
+    else if (/<meta[^>]*generator[^>]*notion/i.test(html)) { result.sourceGuess = 'Notion'; result.confidence = 'medium'; }
+    else { result.sourceGuess = 'Formatted content, source app not identifiable'; result.confidence = 'low'; }
+  } else {
+    result.sourceGuess = 'Plain text only, no formatting metadata (consistent with a chat AI, notes app, code editor, or manual typing then copy)';
+    result.confidence = 'low';
+  }
+  return result;
+}
+
+var EM_DASH = String.fromCharCode(8212);
+function buildPastedSpanHtml(text){
+  var escaped = esc(text);
+  var marked = escaped.split(EM_DASH).join('<span class="emdash-flag" title="em dash">' + EM_DASH + '</span>');
+  marked = marked.replace(/\n/g, '<br>');
+  return '<span class="pasted-text" title="pasted content">' + marked + '</span>';
+}
+function insertHtmlAtCursor(html){
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  var range = sel.getRangeAt(0);
+  range.deleteContents();
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  var frag = document.createDocumentFragment();
+  var lastNode = null;
+  var node;
+  while ((node = wrapper.firstChild)) { lastNode = frag.appendChild(node); }
+  range.insertNode(frag);
+  if (lastNode) {
+    var after = range.cloneRange();
+    after.setStartAfter(lastNode);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+  }
+}
+function sanitizeHtml(html){
+  var allowed = { SPAN: 1, BR: 1, DIV: 1, B: 1, I: 1, U: 1 };
+  var doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
+  (function clean(node){
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var child = node.childNodes[i];
+      if (child.nodeType === 1) {
+        if (!allowed[child.tagName]) {
+          var textNode = document.createTextNode(child.textContent);
+          node.replaceChild(textNode, child);
+          continue;
+        }
+        Array.prototype.slice.call(child.attributes).forEach(function(attr){
+          if (attr.name !== 'class' && attr.name !== 'title') child.removeAttribute(attr.name);
+        });
+        clean(child);
+      }
+    }
+  })(doc.body.firstChild);
+  return doc.body.firstChild.innerHTML;
+}
+
+/* rendering */
+function renderProgressBar(){
+  var answered = order.filter(function(id){ return qState[id].answer.trim().length > 0; }).length;
+  document.getElementById('progressBar').textContent =
+    assignment.directorName + ', Question ' + (currentIdx + 1) + ' of ' + order.length + ', ' + answered + ' answered, elapsed ' + fmtMs(Date.now() - new Date(startedAt).getTime());
+}
+
+function renderQNav(){
+  document.getElementById('qNavList').innerHTML = order.map(function(id, i){
+    var answered = qState[id].answer.trim().length > 0;
+    return '<li class="' + (i === currentIdx ? 'current' : '') + '" onclick="jumpTo(' + i + ')"><span><span class="dot ' + (answered ? 'answered' : '') + '"></span>Q' + (i + 1) + '</span></li>';
+  }).join('');
+}
+
+function updatePlaceholder(box){
+  var empty = box.textContent.trim() === '';
+  box.classList.toggle('is-empty', empty);
+}
+
+function renderQuestion(){
+  var id = order[currentIdx];
+  var q = assignment.questions.find(function(x){ return x.id === id; });
+  var st = qState[id];
+  st.visits++;
+  if (!st.firstViewedAt) st.firstViewedAt = new Date().toISOString();
+  lastResumeAt = Date.now();
+  navigationLog.push({ questionId: id, enteredAt: new Date().toISOString() });
+
+  document.getElementById('questionCard').innerHTML =
+    '<div class="muted">Question ' + (currentIdx + 1) + ' of ' + order.length + ', ' + q.difficulty + ', ' + (q.type === 'long' ? 'Long answer' : 'Short answer') + '</div>' +
+    '<p style="font-size:15px;"><strong>' + esc(q.prompt) + '</strong></p>' +
+    (q.scenario ? '<div class="scenario">' + esc(q.scenario) + '</div><div class="muted">You may reference or copy the scenario text above in your answer.</div>' : '') +
+    '<label style="margin-top:12px;">Your answer</label>' +
+    '<div id="answerBox" class="answerbox" contenteditable="true" data-placeholder="Type your answer..."></div>' +
+    '<div class="legend">Highlighted text was pasted in rather than typed. Em dash characters inside a paste are marked separately.</div>' +
+    '<div id="pasteLog"></div>';
+
+  var box = document.getElementById('answerBox');
+  box.innerHTML = st.answerHtml || '';
+  updatePlaceholder(box);
+  renderPasteLog(id);
+
+  box.addEventListener('input', function(){
+    qState[id].answer = box.innerText;
+    qState[id].answerHtml = box.innerHTML;
+    qState[id].edits++;
+    updatePlaceholder(box);
+    renderQNav();
+    autosave();
+  });
+
+  box.addEventListener('paste', function(e){
+    e.preventDefault();
+    var cd = e.clipboardData || window.clipboardData;
+    var text = cd.getData('text/plain') || '';
+    var html = cd.getData('text/html') || '';
+    if (!text) return;
+    var analysis = analyzePaste(html, text, q.scenario);
+    var containsEmDash = text.indexOf(EM_DASH) !== -1;
+    insertHtmlAtCursor(buildPastedSpanHtml(text));
+    qState[id].answer = box.innerText;
+    qState[id].answerHtml = box.innerHTML;
+    qState[id].edits++;
+    qState[id].pasteEvents.push({
+      timestamp: new Date().toISOString(),
+      sizeChars: text.length,
+      timeOnQuestionMsAtPaste: qState[id].totalMs + (lastResumeAt ? Date.now() - lastResumeAt : 0),
+      sourceGuess: analysis.sourceGuess,
+      confidence: analysis.confidence,
+      matchesScenario: analysis.matchesScenario,
+      containsEmDash: containsEmDash
+    });
+    toast('Paste detected, logged (' + text.length + ' characters)' + (containsEmDash ? ', includes an em dash' : ''));
+    renderPasteLog(id);
+    updatePlaceholder(box);
+    renderQNav();
+    autosave();
+  });
+
+  document.addEventListener('copy', function onCopy(){
+    if (document.getElementById('screen-assessment').classList.contains('hidden')) {
+      document.removeEventListener('copy', onCopy);
+      return;
+    }
+    qState[id].copyEvents.push({ timestamp: new Date().toISOString() });
+  }, { once: true });
+
+  renderQNav();
+  renderProgressBar();
+}
+
+function renderPasteLog(id){
+  var evts = qState[id].pasteEvents;
+  var el = document.getElementById('pasteLog');
+  if (!el) return;
+  if (evts.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = evts.map(function(ev){
+    return '<div class="pastebox">Paste logged, ' + ev.sizeChars + ' characters, ' + Math.round(ev.timeOnQuestionMsAtPaste / 1000) + 's into this question. Likely source: ' + esc(ev.sourceGuess) + ' (' + ev.confidence + ' confidence)' +
+      (ev.matchesScenario ? ', matches the question scenario text' : '') +
+      (ev.containsEmDash ? ', contains an em dash character' : '') + '.</div>';
+  }).join('');
+}
+
+function jumpTo(i){
+  pauseTimer();
+  if (navigationLog.length) navigationLog[navigationLog.length - 1].leftAt = new Date().toISOString();
+  currentIdx = i;
+  renderQuestion();
+}
+function navQuestion(delta){
+  var next = currentIdx + delta;
+  if (next < 0 || next >= order.length) return;
+  jumpTo(next);
+}
+
+function autosave(){
+  if (!attemptKey) return;
+  localStorage.setItem(attemptKey, JSON.stringify({
+    qState: qState, startedAt: startedAt, tabSwitchCount: tabSwitchCount,
+    fullscreenExitCount: fullscreenExitCount, navigationLog: navigationLog, currentIdx: currentIdx
+  }));
+}
+
+/* final review and submit */
+function goReview(){
+  pauseTimer();
+  var list = document.getElementById('finalReviewList');
+  list.innerHTML = order.map(function(id, i){
+    var q = assignment.questions.find(function(x){ return x.id === id; });
+    var st = qState[id];
+    var answered = st.answer.trim().length > 0;
+    return '<div class="card"><strong>Q' + (i + 1) + '.</strong> ' + esc(q.prompt) + '<br>' +
+      (answered ? '<div class="scenario">' + sanitizeHtml(st.answerHtml) + '</div>' : '<span class="muted">Not answered yet</span>') +
+      '<br><a class="link" onclick="jumpFromReview(' + i + ')">Edit this answer</a></div>';
+  }).join('');
+  showOnly('screen-finalreview');
+}
+function jumpFromReview(i){
+  showOnly('screen-assessment');
+  jumpTo(i);
+}
+function backToAssessment(){
+  showOnly('screen-assessment');
+  lastResumeAt = Date.now();
+  renderQuestion();
+}
+
+function computeFlag(st, answerLen){
+  var totalPasteChars = st.pasteEvents.reduce(function(s, e){ return s + e.sizeChars; }, 0);
+  var seconds = st.totalMs / 1000;
+  if (st.pasteEvents.length === 0) return { level: 'normal', label: 'No paste activity' };
+  var anyLegit = st.pasteEvents.some(function(e){ return e.matchesScenario; });
+  var anyEmDash = st.pasteEvents.some(function(e){ return e.containsEmDash; });
+  if (totalPasteChars > 0 && answerLen > 0 && totalPasteChars >= answerLen * 0.7 && seconds < 30 && !anyLegit) {
+    return { level: 'flag', label: 'Large paste, very little time on question' + (anyEmDash ? ', pasted text contains an em dash' : '') };
+  }
+  if (anyEmDash && !anyLegit) {
+    return { level: 'review', label: 'Paste detected, contains an em dash, worth a look alongside the other signals' };
+  }
+  return { level: 'review', label: 'Paste detected, worth a look' };
+}
+
+function confirmSubmit(){
+  if (!confirm('Submit your final answers? This will end the assessment and exit fullscreen.')) return;
+  pauseTimer();
+  var submittedAt = new Date().toISOString();
+  var totalDurationMs = new Date(submittedAt).getTime() - new Date(startedAt).getTime();
+
+  var questions = order.map(function(id){
+    var q = assignment.questions.find(function(x){ return x.id === id; });
+    var st = qState[id];
+    return {
+      id: id, prompt: q.prompt, difficulty: q.difficulty, type: q.type,
+      answer: st.answer, answerHtml: sanitizeHtml(st.answerHtml),
+      timeOnQuestionMs: st.totalMs, edits: st.edits, visits: st.visits,
+      pasteEvents: st.pasteEvents, copyEvents: st.copyEvents,
+      containsEmDashInAnswer: st.answer.indexOf(EM_DASH) !== -1,
+      flag: computeFlag(st, st.answer.length)
+    };
+  });
+
+  var submission = {
+    quizId: bundle.quizId, quizTitle: bundle.quizTitle,
+    directorName: assignment.directorName,
+    startedAt: startedAt, submittedAt: submittedAt, totalDurationMs: totalDurationMs,
+    tabSwitchCount: tabSwitchCount, fullscreenExitCount: fullscreenExitCount,
+    navigationLog: navigationLog, questions: questions
+  };
+
+  var all = JSON.parse(localStorage.getItem('ss_submissions') || '[]');
+  all.push(submission);
+  localStorage.setItem('ss_submissions', JSON.stringify(all));
+  localStorage.removeItem(attemptKey);
+
+  clearInterval(timerHandle);
+  if (document.exitFullscreen) document.exitFullscreen().catch(function(){});
+
+  downloadJSON(submission, 'submission-' + assignment.directorName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.json');
+
+  document.getElementById('doneSummary').innerHTML =
+    '<table>' +
+    '<tr><th>Total time</th><td>' + fmtMs(totalDurationMs) + '</td></tr>' +
+    '<tr><th>Questions answered</th><td>' + questions.filter(function(q){ return q.answer.trim(); }).length + ' of ' + questions.length + '</td></tr>' +
+    '<tr><th>Tab switches</th><td>' + tabSwitchCount + '</td></tr>' +
+    '<tr><th>Fullscreen exits</th><td>' + fullscreenExitCount + '</td></tr>' +
+    '</table>';
+  showOnly('screen-done');
+}
+
+/* reviewer dashboard */
+var loadedSubmissions = [];
+function showReviewer(){ showOnly('screen-reviewer'); renderReviewerTable(); }
+function showImport(){ showOnly('screen-import'); }
+
+document.getElementById('submissionFiles').addEventListener('change', function(e){
+  var files = Array.prototype.slice.call(e.target.files);
+  var remaining = files.length;
+  files.forEach(function(f){
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try {
+        var data = JSON.parse(evt.target.result);
+        if (data.directorName) loadedSubmissions.push(data);
+      } catch (err) {}
+      remaining--;
+      if (remaining === 0) renderReviewerTable();
+    };
+    reader.readAsText(f);
+  });
+});
+
+function loadLocalSubmissions(){
+  var all = JSON.parse(localStorage.getItem('ss_submissions') || '[]');
+  loadedSubmissions = loadedSubmissions.concat(all);
+  renderReviewerTable();
+  toast('Loaded ' + all.length + ' locally saved submission(s).');
+}
+
+function renderReviewerTable(){
+  var wrap = document.getElementById('reviewerTableWrap');
+  if (loadedSubmissions.length === 0) { wrap.innerHTML = '<p class="muted">No submissions loaded yet.</p>'; return; }
+  wrap.innerHTML = '<table><tr><th>Director</th><th>Started</th><th>Submitted</th><th>Total time</th><th>Flags</th><th></th></tr>' +
+    loadedSubmissions.map(function(s, i){
+      var flags = s.questions.filter(function(q){ return q.flag && q.flag.level !== 'normal'; }).length;
+      return '<tr>' +
+        '<td>' + esc(s.directorName) + '</td>' +
+        '<td>' + new Date(s.startedAt).toLocaleString() + '</td>' +
+        '<td>' + new Date(s.submittedAt).toLocaleString() + '</td>' +
+        '<td>' + fmtMs(s.totalDurationMs) + '</td>' +
+        '<td>' + (flags > 0 ? '<span class="badge flag">' + flags + '</span>' : '<span class="badge normal">0</span>') + '</td>' +
+        '<td><a class="link" onclick="viewSubmission(' + i + ')">View detail</a></td>' +
+        '</tr>';
+    }).join('') + '</table>';
+}
+
+function viewSubmission(i){
+  var s = loadedSubmissions[i];
+  var detail = document.getElementById('reviewerDetail');
+  detail.innerHTML =
+    '<div class="card">' +
+    '<h2 style="margin-top:0;">' + esc(s.directorName) + ', ' + esc(s.quizTitle || '') + '</h2>' +
+    '<table>' +
+    '<tr><th>Started</th><td>' + new Date(s.startedAt).toLocaleString() + '</td></tr>' +
+    '<tr><th>Submitted</th><td>' + new Date(s.submittedAt).toLocaleString() + '</td></tr>' +
+    '<tr><th>Total time</th><td>' + fmtMs(s.totalDurationMs) + '</td></tr>' +
+    '<tr><th>Tab switches</th><td>' + s.tabSwitchCount + '</td></tr>' +
+    '<tr><th>Fullscreen exits</th><td>' + s.fullscreenExitCount + '</td></tr>' +
+    '</table>' +
+    s.questions.map(function(q, i){
+      return '<hr>' +
+        '<p><strong>Q' + (i + 1) + ' (' + q.difficulty + ').</strong> ' + esc(q.prompt) +
+        ' <span class="badge ' + q.flag.level + '">' + esc(q.flag.label) + '</span></p>' +
+        '<p class="muted">Time on question: ' + fmtMs(q.timeOnQuestionMs) + ', edits: ' + q.edits + ', visits: ' + q.visits + ', answer length: ' + q.answer.length + ' chars' +
+        (q.containsEmDashInAnswer ? ', answer contains an em dash character' : '') + '</p>' +
+        (q.pasteEvents.length ? q.pasteEvents.map(function(ev){
+          return '<div class="pastebox">' + ev.sizeChars + ' chars pasted at ' + Math.round(ev.timeOnQuestionMsAtPaste / 1000) + 's in. Likely source: ' + esc(ev.sourceGuess) + ' (' + ev.confidence + ')' +
+            (ev.matchesScenario ? ', matches scenario text' : '') + (ev.containsEmDash ? ', contains an em dash' : '') + '.</div>';
+        }).join('') : '') +
+        '<div class="scenario">' + (q.answerHtml || sanitizeHtml('') || esc(q.answer) || '<em>No answer given</em>') + '</div>';
+    }).join('') +
+    '</div>';
+}
+
+showOnly('screen-import');
+</script>
+</body>
+</html>
