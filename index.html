@@ -19,8 +19,8 @@
   button { font-family: inherit; font-size: 13px; padding: 7px 13px; border: 1px solid #333; background: #eee; border-radius: 3px; cursor: pointer; margin: 4px 4px 4px 0; }
   button:hover { background: #ddd; }
   button:disabled { opacity: 0.5; cursor: default; }
-  button.primary { background: #2a5; border-color: #1d3; color: #fff; }
-  button.primary:hover { background: #294; }
+  button.primary { background: #5b4fd6; border-color: #4438b0; color: #fff; }
+  button.primary:hover { background: #4a3fc4; }
   button.danger { background: #fff0f0; border-color: #c33; color: #a22; }
   button.small { padding: 3px 8px; font-size: 12px; }
   .card { border: 1px solid #ccc; border-radius: 4px; padding: 14px 16px; margin: 10px 0; background: #fafafa; }
@@ -33,9 +33,9 @@
   .qnav { list-style: none; padding: 0; margin: 0; }
   .qnav li { padding: 6px 8px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 4px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between; }
   .qnav li:hover { background: #eee; }
-  .qnav li.current { border-color: #2a5; font-weight: 700; }
+  .qnav li.current { border-color: #5b4fd6; font-weight: 700; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #ccc; }
-  .dot.answered { background: #2a5; }
+  .dot.answered { background: #5b4fd6; }
   .main { flex: 1; min-width: 0; }
   .scenario { background: #fff; border-left: 3px solid #999; padding: 8px 12px; margin: 8px 0; font-size: 13px; white-space: pre-wrap; }
   .toast { position: fixed; bottom: 16px; right: 16px; background: #222; color: #fff; padding: 8px 14px; border-radius: 4px; font-size: 12px; opacity: 0.92; z-index: 50; }
@@ -43,7 +43,7 @@
   th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
   th { background: #eee; }
   .badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid #999; }
-  .badge.normal { border-color: #2a5; color: #196; }
+  .badge.normal { border-color: #5b4fd6; color: #4438b0; }
   .badge.review { border-color: #e0a020; color: #a76; }
   .badge.flag { border-color: #c33; color: #a22; background: #fff0f0; }
   .pastebox { background: #fff8f0; border: 1px dashed #e0a020; padding: 6px 8px; font-size: 12px; margin-top: 4px; border-radius: 3px; }
@@ -66,7 +66,7 @@
 <!-- import screen -->
 <div id="screen-import">
   <div class="card">
-    <label>Import assessment file (.json, given to you by Star Studios)</label>
+    <label>Import assessment file (.json, given to you by a Star Studios Representative)</label>
     <input type="file" id="bundleFile" accept="application/json">
     <div class="muted" style="margin-top:6px;">Or paste the file contents below.</div>
     <textarea id="bundlePaste" rows="3" placeholder="Paste bundle JSON here instead of uploading a file"></textarea>
@@ -80,6 +80,7 @@
   <div class="card">
     <h2 id="loginQuizTitle" style="margin-top:0;"></h2>
     <p id="loginQuizDesc" class="muted"></p>
+    <p id="loginRep" class="muted"></p>
     <label>Your name</label>
     <select id="loginName"></select>
     <label>Access code</label>
@@ -136,7 +137,7 @@
 <div id="screen-done" class="hidden">
   <div class="card">
     <h2 style="margin-top:0;">Submitted</h2>
-    <p>Thanks, your responses have been recorded and a copy has downloaded to your device. If you were asked to send it in yourself, please send that file to Star Studios.</p>
+    <p id="doneMessage">Thanks, your responses have been recorded and a copy has downloaded to your device. If you were asked to send it in yourself, please send that file back to your Star Studios Representative.</p>
     <div id="doneSummary"></div>
   </div>
 </div>
@@ -247,6 +248,7 @@ function tryLoadBundle(text){
     bundle = data;
     document.getElementById('loginQuizTitle').textContent = bundle.quizTitle || 'Assessment';
     document.getElementById('loginQuizDesc').textContent = bundle.description || '';
+    document.getElementById('loginRep').textContent = bundle.representativeName ? ('Given to you by ' + bundle.representativeName + ', Star Studios Representative') : '';
     var sel = document.getElementById('loginName');
     sel.innerHTML = '<option value="">Select your name...</option>' +
       bundle.assignments.map(function(a){ return '<option value="' + esc(a.directorName) + '">' + esc(a.directorName) + '</option>'; }).join('');
@@ -471,6 +473,12 @@ function updatePlaceholder(box){
   box.classList.toggle('is-empty', empty);
 }
 
+function typeLabel(type){
+  if (type === 'mc') return 'Multiple choice';
+  if (type === 'long') return 'Long answer';
+  return 'Short answer';
+}
+
 function renderQuestion(){
   var id = order[currentIdx];
   var q = assignment.questions.find(function(x){ return x.id === id; });
@@ -480,10 +488,18 @@ function renderQuestion(){
   lastResumeAt = Date.now();
   navigationLog.push({ questionId: id, enteredAt: new Date().toISOString() });
 
-  document.getElementById('questionCard').innerHTML =
-    '<div class="muted">Question ' + (currentIdx + 1) + ' of ' + order.length + ', ' + q.difficulty + ', ' + (q.type === 'long' ? 'Long answer' : 'Short answer') + '</div>' +
+  var header = '<div class="muted">Question ' + (currentIdx + 1) + ' of ' + order.length + ', ' + q.difficulty + ', ' + typeLabel(q.type) + '</div>' +
     '<p style="font-size:15px;"><strong>' + esc(q.prompt) + '</strong></p>' +
-    (q.scenario ? '<div class="scenario">' + esc(q.scenario) + '</div><div class="muted">You may reference or copy the scenario text above in your answer.</div>' : '') +
+    (q.scenario ? '<div class="scenario">' + esc(q.scenario) + '</div><div class="muted">You may reference or copy the scenario text above in your answer.</div>' : '');
+
+  if (q.type === 'mc') {
+    renderMcQuestion(id, q, st, header);
+    renderQNav();
+    renderProgressBar();
+    return;
+  }
+
+  document.getElementById('questionCard').innerHTML = header +
     '<label style="margin-top:12px;">Your answer</label>' +
     '<div id="answerBox" class="answerbox" contenteditable="true" data-placeholder="Type your answer..."></div>' +
     '<div class="legend">Highlighted text was pasted in rather than typed. Em dash characters inside a paste are marked separately.</div>' +
@@ -541,6 +557,31 @@ function renderQuestion(){
 
   renderQNav();
   renderProgressBar();
+}
+
+function renderMcQuestion(id, q, st, header){
+  var choicesHtml = (q.choices || []).map(function(c){
+    var selectedId = st.answer ? st.answer.split(')')[0].trim() : '';
+    var checked = selectedId === c.id ? 'checked' : '';
+    return '<label style="display:block; margin:8px 0; font-weight:400; cursor:pointer;">' +
+      '<input type="radio" name="mcChoice" value="' + c.id + '" ' + checked + ' style="width:auto; margin-right:8px;" onchange="selectMcChoice(\'' + id + '\',\'' + c.id + '\')"> ' +
+      esc(c.id) + ') ' + esc(c.text) +
+    '</label>';
+  }).join('');
+  document.getElementById('questionCard').innerHTML = header +
+    '<label style="margin-top:12px;">Choose one</label>' +
+    '<div id="mcChoices">' + choicesHtml + '</div>';
+}
+
+function selectMcChoice(qid, choiceId){
+  var q = assignment.questions.find(function(x){ return x.id === qid; });
+  var choice = (q.choices || []).find(function(c){ return c.id === choiceId; });
+  var text = choiceId + ') ' + (choice ? choice.text : '');
+  qState[qid].answer = text;
+  qState[qid].answerHtml = esc(text);
+  qState[qid].edits++;
+  renderQNav();
+  autosave();
 }
 
 function renderPasteLog(id){
@@ -650,6 +691,11 @@ function confirmSubmit(){
   if (document.exitFullscreen) document.exitFullscreen().catch(function(){});
 
   downloadJSON(submission, 'submission-' + assignment.directorName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.json');
+
+  if (bundle.representativeName) {
+    document.getElementById('doneMessage').textContent =
+      'Thanks, your responses have been recorded and a copy has downloaded to your device. If you were asked to send it in yourself, please send that file back to ' + bundle.representativeName + ', your Star Studios Representative.';
+  }
 
   document.getElementById('doneSummary').innerHTML =
     '<table>' +
